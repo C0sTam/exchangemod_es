@@ -1,5 +1,8 @@
 package com.costam.exchangebot.client.network.packet.inbound;
 
+import com.costam.exchangebot.client.ExchangebotClient;
+import com.costam.exchangebot.client.network.packet.outbound.BankUpdatePacket;
+import com.costam.exchangebot.client.network.packet.outbound.GetItemsPacket;
 import com.costam.exchangebot.client.util.LoggerUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
@@ -28,6 +31,7 @@ public class IdentifiedPacket implements InboundPacket {
         LoggerUtil.info("Client successfully identified. UUID: " + uuid + ", Name: " + name + ", Mode: " + mode + ", Balance: " + balance);
         if (MinecraftClient.getInstance().player != null) {
 
+            ExchangebotClient.getWebSocketClient().sendPacket(new GetItemsPacket());
             MinecraftClient.getInstance().player.sendMessage(Text.literal("§a[ExchangeBot] Pomyślnie połączono z systemem!"), false);
             MinecraftClient.getInstance().player.sendMessage(Text.literal("§aTwoje saldo: " + balance + " na trybie: " + mode), false);
         }

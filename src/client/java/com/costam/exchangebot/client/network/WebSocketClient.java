@@ -2,6 +2,7 @@ package com.costam.exchangebot.client.network;
 
 import com.costam.exchangebot.client.ExchangebotClient;
 import com.costam.exchangebot.client.network.packet.inbound.*;
+import com.costam.exchangebot.client.network.packet.outbound.GetItemsPacket;
 import com.costam.exchangebot.client.network.packet.outbound.IdentifyPacket;
 import com.costam.exchangebot.client.network.packet.outbound.OutboundPacket;
 import com.costam.exchangebot.client.util.BalanceInfoUtil;
@@ -62,6 +63,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
         inboundPacketTypes.put("SEND_MESSAGE", SendMessagePacket.class);
         inboundPacketTypes.put("ACCOUNT_KICK", AccountKickPacket.class);
         inboundPacketTypes.put("ACCOUNT_JOIN", AccountJoinPacket.class);
+        inboundPacketTypes.put("ITEMS_RESPONSE", ItemsResponsePacket.class);
     }
 
     @Override
