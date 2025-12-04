@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "exchangebot",
+  "version": "${version}",
+
+  "name": "ExchangeBot",
+  "description": "",
+  "authors": [],
+  "contact": {},
+
+  "license": "MIT",
+  "icon": "assets/exchangebot/icon.png",
+
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.costam.exchangebot.client.ExchangebotClient"]
+  },
+
+  "mixins": [
+    {
+      "config": "exchangebot.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
