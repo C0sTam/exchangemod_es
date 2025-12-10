@@ -277,7 +277,7 @@ public class GuiEventHandler {
                     ItemStack itemInSlot45 = slot45.getStack();
                     if (!itemInSlot.isEmpty() && itemInSlot.getItem() == Items.RED_DYE) {
                         if (client.player.currentScreenHandler != null) {
-                            boolean validate = validateGuiSlots(client,true);
+                            boolean validate = validateGuiSlots(client,false);
                             if(!validate) {
                                 client.player.closeHandledScreen();
                                 return;
