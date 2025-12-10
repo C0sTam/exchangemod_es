@@ -33,7 +33,7 @@ public class ChatEventHandler {
     private static final Pattern SENT_PATTERN = Pattern.compile("^Wysłano ([0-9]+(?:[.,][0-9]{1,2})?(?:k|MLN|mld)?)\\$ dla (\\S+).*");
     private static final Pattern TRADE_REQUEST_PATTERN = Pattern.compile("^Otrzymałeś prośbę o handel od gracza (\\S+)!.*");
     private static final Pattern PLAYER_NOT_AVAILABLE_PATTERN = Pattern.compile(
-            "Gracz znajduję się zbyt daleko od Ciebie.*|Taki gracz nie jest aktualnie na twoim sektorze.*|not found message commands.player.trade.too.far.*|not found message commands.player.trade.player.not.found.*|Nastepna komende możesz wpisać na.*",
+            "Gracz znajduję się zbyt daleko od Ciebie.*|Taki gracz nie jest aktualnie na twoim sektorze.*|not found message commands.player.trade.too.far.*|commands.player.trade.too.far.*|not found message commands.player.trade.player.not.found.*|commands.player.trade.player.not.found.*|Nastepna komende możesz wpisać na.*",
             Pattern.CASE_INSENSITIVE
     );
 
