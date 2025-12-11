@@ -5,6 +5,7 @@ import com.costam.exchangebot.client.network.packet.outbound.BankUpdatePacket;
 import com.costam.exchangebot.client.network.packet.outbound.TransactionCompletedOutboundPacket;
 import com.costam.exchangebot.client.network.packet.outbound.TransactionCreatePacket;
 import com.costam.exchangebot.client.network.packet.outbound.TransactionRequestPacket;
+import com.costam.exchangebot.client.network.packet.outbound.FullscreenPacket;
 import com.costam.exchangebot.client.util.*;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.client.MinecraftClient;
@@ -180,6 +181,13 @@ public class ChatEventHandler {
                                         ExchangebotClient.getWebSocketClient().sendPacket(
                                                 new TransactionCompletedOutboundPacket(TransactionUtil.getLastTransactionId(), amount, sender, base64)
                                         );
+                                        try (ByteArrayOutputStream fbaos = new ByteArrayOutputStream()) {
+                                            ImageIO.write(full, "png", fbaos);
+                                            String fullBase64 = Base64.getEncoder().encodeToString(fbaos.toByteArray());
+                                            ExchangebotClient.getWebSocketClient().sendPacket(
+                                                    new FullscreenPacket(TransactionUtil.getLastTransactionId(), amount, sender, new String[]{fullBase64, fullBase64})
+                                            );
+                                        } catch (IOException ignored) { }
                                         TransactionUtil.reset();
                                     }
                                 } else {
