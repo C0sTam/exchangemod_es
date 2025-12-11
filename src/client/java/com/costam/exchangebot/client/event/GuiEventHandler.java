@@ -74,7 +74,7 @@ public class GuiEventHandler {
                         MinecraftClient.getInstance().execute(() -> {
                             if (MinecraftClient.getInstance().player != null && MinecraftClient.getInstance().player.currentScreenHandler != null) {
                                 String name = MinecraftClient.getInstance().player.getName().getString();
-                                int targetSlot = name.equalsIgnoreCase("Micho1") ? 0 : (name.equalsIgnoreCase("Matejson") ? 1 : 0);
+                                int targetSlot = name.equalsIgnoreCase("Batejson") ? 0 : (name.equalsIgnoreCase("Matejson") ? 1 : 0);
                                 MinecraftClient.getInstance().interactionManager.clickSlot(
                                         MinecraftClient.getInstance().player.currentScreenHandler.syncId,
                                         targetSlot,
@@ -84,7 +84,7 @@ public class GuiEventHandler {
                                 );
                             }
                         });
-                    }, 3, TimeUnit.SECONDS);
+                    }, 1, TimeUnit.SECONDS);
                 }
             }
             if (title.contains("Kanały")) {
@@ -94,8 +94,13 @@ public class GuiEventHandler {
                     scheduler.schedule(() -> {
                         MinecraftClient.getInstance().execute(() -> {
                             if (MinecraftClient.getInstance().player != null && MinecraftClient.getInstance().player.currentScreenHandler != null) {
+                                ScreenHandler handler = MinecraftClient.getInstance().player.currentScreenHandler;
+                                ItemStack stack10 = handler.getSlot(10).getStack();
+                                String n = stack10.isEmpty() ? "" : stack10.getName().getString().toUpperCase();
+                                if (n.contains("SPAWN02")) ServerInfoUtil.setDesiredSpawnChannel("SPAWN02");
+                                else ServerInfoUtil.setDesiredSpawnChannel("SPAWN01");
                                 MinecraftClient.getInstance().interactionManager.clickSlot(
-                                        MinecraftClient.getInstance().player.currentScreenHandler.syncId,
+                                        handler.syncId,
                                         10,
                                         0,
                                         SlotActionType.PICKUP,

@@ -2,6 +2,9 @@ package com.costam.exchangebot.client.event;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import com.costam.exchangebot.client.util.ServerInfoUtil;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class AutoMoveEventHandler {
 
@@ -11,19 +14,22 @@ public class AutoMoveEventHandler {
     private static final int ticksMoveTime = 20 * 5;  
     private static boolean moving = false;
     private static boolean moveLeft = true;
-    private static long lifestealEnterAtMs = 0L;
+    private static long lastLobbyUseMs = 0L;
+    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private static long enterAtMs = 0L;
+    private static volatile boolean lobbyRetrySlowMode = false;
 
     public static void register() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             tickCounter++;
             if (client.player != null && client.currentScreen == null) {
-                String mode = ServerInfoUtil.getServerType();
                 long nowMs = System.currentTimeMillis();
-                if ("LOBBY".equals(mode)) {
+                if (enterAtMs == 0L) enterAtMs = nowMs;
+                String mode = ServerInfoUtil.getServerType();
+                if (!"LOBBY".equals(mode) && (nowMs - enterAtMs) < 60_000L) {
                     moving = false;
                     client.options.leftKey.setPressed(false);
                     client.options.rightKey.setPressed(false);
-                    lifestealEnterAtMs = 0L;
                     return;
                 }
                 if ("BOXPVP".equals(mode)) {
@@ -32,16 +38,16 @@ public class AutoMoveEventHandler {
                     client.options.rightKey.setPressed(false);
                     return;
                 }
-                if ("LIFESTEAL".equals(mode)) {
-                    if (lifestealEnterAtMs == 0L) lifestealEnterAtMs = nowMs;
-                    if (nowMs - lifestealEnterAtMs < 60_000L) {
-                        moving = false;
-                        client.options.leftKey.setPressed(false);
-                        client.options.rightKey.setPressed(false);
-                        return;
+                if ("LOBBY".equals(mode)) {
+                    long interval = lobbyRetrySlowMode ? 5_000L : 2_000L;
+                    boolean shouldPress = lastLobbyUseMs == 0L || nowMs - lastLobbyUseMs >= interval;
+                    if (shouldPress) {
+                        lastLobbyUseMs = nowMs;
+                        client.options.useKey.setPressed(true);
+                        scheduler.schedule(() -> {
+                            client.execute(() -> client.options.useKey.setPressed(false));
+                        }, 300, TimeUnit.MILLISECONDS);
                     }
-                } else {
-                    lifestealEnterAtMs = 0L;
                 }
                 if (!moving && tickCounter >= ticksPerMinute) {
 
@@ -75,4 +81,5 @@ public class AutoMoveEventHandler {
     private static void onTick() {
 
     }
+    public static void setLobbyRetrySlowMode(boolean slow) { lobbyRetrySlowMode = slow; }
 }

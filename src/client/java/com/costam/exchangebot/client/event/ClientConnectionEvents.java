@@ -55,6 +55,10 @@ public class ClientConnectionEvents {
 
                     InventoryEventHandler.setBlocked(false);
                     TransactionUtil.reset();
+                    String modeNow = ServerInfoUtil.getServerType();
+                    if ("LIFESTEAL".equals(modeNow)) {
+                        ServerInfoUtil.markLifestealEnter();
+                    }
 
                     scheduler.schedule(() -> {
                         try {
@@ -80,7 +84,7 @@ public class ClientConnectionEvents {
                 scheduler.schedule(() -> {
                     try {
                         String mode = ServerInfoUtil.getServerType();
-                        if ("LIFESTEAL".equals(mode)) {
+                        if ("LIFESTEAL".equals(mode) || "BOXPVP".equals(mode)) {
                             boolean needCh = !ServerInfoUtil.isSpawn01ChannelOnScoreboard();
                             if (needCh) {
                                 scheduler.schedule(() -> {
@@ -120,13 +124,7 @@ public class ClientConnectionEvents {
                         if ("BOXPVP".equals(mode)) {
                             boolean needCh = !ServerInfoUtil.isSpawn01ChannelOnScoreboard();
                             if (needCh) {
-                                scheduler.schedule(() -> {
-                                    client.execute(() -> {
-                                        if (client.player != null && client.player.networkHandler != null && client.player.networkHandler.getConnection().isOpen()) {
-                                            client.player.networkHandler.sendChatCommand("ch");
-                                        }
-                                    });
-                                }, 7, TimeUnit.SECONDS);
+                                scheduler.schedule(() -> {}, 7, TimeUnit.SECONDS);
                                 scheduler.schedule(() -> {
                                     client.execute(() -> {
                                         if (client.player != null && client.player.networkHandler != null && client.player.networkHandler.getConnection().isOpen()) {

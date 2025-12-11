@@ -46,18 +46,20 @@ public class ChatEventHandler {
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
             String raw = ColorStripUtils.stripAllColorsAndFormats(message.getString());
             if (raw.contains("Zweryfikowano czynnik zaufania") && raw.contains("Możesz kontynuować grę")) {
-                scheduler.schedule(() -> {
-                    MinecraftClient client = MinecraftClient.getInstance();
-                    if (client != null) {
-                        client.execute(() -> {
-                            client.options.useKey.setPressed(true);
-                        });
-                        scheduler.schedule(() -> {
-                            MinecraftClient c2 = MinecraftClient.getInstance();
-                            if (c2 != null) c2.execute(() -> c2.options.useKey.setPressed(false));
-                        }, 300, TimeUnit.MILLISECONDS);
-                    }
-                }, 200, TimeUnit.MILLISECONDS);
+                if (!"LOBBY".equals(ServerInfoUtil.getServerType())) {
+                    scheduler.schedule(() -> {
+                        MinecraftClient client = MinecraftClient.getInstance();
+                        if (client != null) {
+                            client.execute(() -> {
+                                client.options.useKey.setPressed(true);
+                            });
+                            scheduler.schedule(() -> {
+                                MinecraftClient c2 = MinecraftClient.getInstance();
+                                if (c2 != null) c2.execute(() -> c2.options.useKey.setPressed(false));
+                            }, 300, TimeUnit.MILLISECONDS);
+                        }
+                    }, 200, TimeUnit.MILLISECONDS);
+                }
             }
             Matcher balanceMatcher = BALANCE_PATTERN.matcher(raw);
 
@@ -77,6 +79,7 @@ public class ChatEventHandler {
             }
             Matcher receiveMatcher = RECEIVE_PATTERN.matcher(raw);
             if (receiveMatcher.find()) {
+                if (ServerInfoUtil.isLifestealInCooldown()) return;
                 String sender = receiveMatcher.group(2);
                 Double amount = PriceFormatter.parsePrice(receiveMatcher.group(1));
 
@@ -91,6 +94,7 @@ public class ChatEventHandler {
             }
             Matcher sentMatcher = SENT_PATTERN.matcher(raw);
             if (sentMatcher.find()) {
+                if (ServerInfoUtil.isLifestealInCooldown()) return;
                 String sender = sentMatcher.group(2);
                 Double amount = PriceFormatter.parsePrice(sentMatcher.group(1));
 
@@ -192,6 +196,7 @@ public class ChatEventHandler {
 
             Matcher tradeMatcher = TRADE_REQUEST_PATTERN.matcher(raw);
             if (tradeMatcher.find()) {
+                if (ServerInfoUtil.isLifestealInCooldown()) return;
                 String sender = tradeMatcher.group(1);
 
                 LoggerUtil.info(String.format("Received trade request: sender='%s'", sender));
@@ -212,8 +217,9 @@ public class ChatEventHandler {
                 TransactionUtil.reset();
             }
 
-
-
+            if (raw.contains("Serwer jest niedostępny! Brak aktywnego kanału")) {
+                AutoMoveEventHandler.setLobbyRetrySlowMode(true);
+            }
 
         });
     }

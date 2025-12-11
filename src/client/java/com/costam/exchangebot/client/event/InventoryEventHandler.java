@@ -97,7 +97,6 @@ public class InventoryEventHandler {
                 if (client.interactionManager != null) {
                     client.interactionManager.interactItem(client.player, Hand.MAIN_HAND);
                 }
-                client.player.swingHand(Hand.MAIN_HAND);
 
                 currentSlot++;
                 if (currentSlot > endSlot) {

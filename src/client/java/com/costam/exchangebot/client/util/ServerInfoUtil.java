@@ -11,6 +11,8 @@ public class ServerInfoUtil {
     private static String serverBrand = null;
     private static net.minecraft.client.network.ServerInfo lastServerInfo = null;
     private static volatile String preferredAccountMode = null;
+    private static volatile String desiredSpawnChannel = "SPAWN01";
+    private static volatile long lifestealEnterAtMs = 0L;
 
 
 
@@ -126,6 +128,17 @@ public class ServerInfoUtil {
 
     public static String getPreferredAccountMode() {
         return preferredAccountMode;
+    }
+
+    public static String getDesiredSpawnChannel() { return desiredSpawnChannel; }
+    public static void setDesiredSpawnChannel(String channel) {
+        if (channel == null) desiredSpawnChannel = "SPAWN01";
+        else desiredSpawnChannel = channel.toUpperCase().contains("SPAWN02") ? "SPAWN02" : "SPAWN01";
+    }
+    public static void markLifestealEnter() { lifestealEnterAtMs = System.currentTimeMillis(); }
+    public static boolean isLifestealInCooldown() {
+        String mode = getServerType();
+        return "LIFESTEAL".equals(mode) && lifestealEnterAtMs != 0L && (System.currentTimeMillis() - lifestealEnterAtMs) < 60_000L;
     }
 
     public static boolean isSpawn01ChannelOnScoreboard() {
