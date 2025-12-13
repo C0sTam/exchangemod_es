@@ -13,6 +13,10 @@ public class TransactionUtil {
     private static String lastTransactionBase64 = null;
     private static Item[] items;
 
+    private static String pendingStatsPlayerName = null;
+    private static boolean waitingStatsConfirmation = false;
+    private static long lastStatsCommandAtMs = 0L;
+
     public static Integer getLastTransactionId() {
         return lastTransactionId;
     }
@@ -40,6 +44,25 @@ public class TransactionUtil {
 
     public static void setLastTransactionBase64(String lastTransactionBase64) {
         TransactionUtil.lastTransactionBase64 = lastTransactionBase64;
+    }
+
+    public static String getPendingStatsPlayerName() {
+        return pendingStatsPlayerName;
+    }
+    public static void setPendingStatsPlayerName(String name) {
+        pendingStatsPlayerName = name;
+    }
+    public static boolean isWaitingStatsConfirmation() {
+        return waitingStatsConfirmation;
+    }
+    public static void setWaitingStatsConfirmation(boolean waiting) {
+        waitingStatsConfirmation = waiting;
+    }
+    public static long getLastStatsCommandAtMs() {
+        return lastStatsCommandAtMs;
+    }
+    public static void setLastStatsCommandAtMs(long ts) {
+        lastStatsCommandAtMs = ts;
     }
 
     public static void reset() {

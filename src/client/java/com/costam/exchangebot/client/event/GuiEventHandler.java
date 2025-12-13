@@ -3,6 +3,9 @@ package com.costam.exchangebot.client.event;
 import com.costam.exchangebot.client.util.LoggerUtil;
 import com.costam.exchangebot.client.util.TransactionUtil;
 import com.costam.exchangebot.client.util.ServerInfoUtil;
+import com.costam.exchangebot.client.ExchangebotClient;
+import com.costam.exchangebot.client.network.packet.outbound.TransactionRequestPacket;
+import com.costam.exchangebot.client.network.packet.outbound.PlayerStatsPacket;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -27,6 +30,7 @@ public class GuiEventHandler {
     private static final Pattern KOSZ_GUI_PATTERN = Pattern.compile("Kosz");
     private static final Pattern AMOUNT_PATTERN = Pattern.compile("\\$([0-9]+)");
     private static final Pattern AUTHOR_PATTERN = Pattern.compile("Wytworzył[: ]+([A-Za-z0-9_]+)");
+    private static final Pattern STATS_GUI_PATTERN = Pattern.compile("Statystyki\\s+([A-Za-z0-9_\\-]+)", Pattern.CASE_INSENSITIVE);
 
     public record CheckData(String amount, String author) {}
     
@@ -87,7 +91,7 @@ public class GuiEventHandler {
                     }, 1, TimeUnit.SECONDS);
                 }
             }
-            if (title.contains("Kanały")) {
+            if (title.contains("Kanały") && !TransactionUtil.isWaitingStatsConfirmation()) {
                 if (currentScreen != lastScreen) {
                     lastScreen = currentScreen;
                     screenOpenTime = System.currentTimeMillis();
@@ -112,6 +116,37 @@ public class GuiEventHandler {
                 }
             }
             
+            Matcher statsMatcher = STATS_GUI_PATTERN.matcher(title);
+
+            if (statsMatcher.find()) {
+                String statsName = statsMatcher.group(1);
+                if (TransactionUtil.getPendingStatsPlayerName() != null && statsName.equalsIgnoreCase(TransactionUtil.getPendingStatsPlayerName())) {
+                    ScreenHandler handler = client.player.currentScreenHandler;
+                    String[] slots = new String[4];
+                    int[] idx = {10,11,12,13};
+                    for (int i = 0; i < 4; i++) {
+                        ItemStack s = handler.getSlot(idx[i]).getStack();
+                        slots[i] = s.isEmpty() ? "" : s.getName().getString();
+                    }
+                    if (ExchangebotClient.getWebSocketClient().isOpen()) {
+                        ExchangebotClient.getWebSocketClient().sendPacket(new PlayerStatsPacket(statsName, slots));
+                    }
+                    if (client.player != null && client.player.currentScreenHandler != null) {
+                        client.player.closeHandledScreen();
+                    }
+                    TransactionUtil.setPendingStatsPlayerName(null);
+                    TransactionUtil.setWaitingStatsConfirmation(false);
+                    scheduler.schedule(() -> {
+                        MinecraftClient.getInstance().execute(() -> {
+                            if (ExchangebotClient.getWebSocketClient().isOpen()) {
+                                ExchangebotClient.getWebSocketClient().sendPacket(new TransactionRequestPacket(statsName));
+                            }
+                        });
+                    }, 2, TimeUnit.SECONDS);
+                    return;
+                }
+            }
+
             Matcher matcher = TRADE_GUI_PATTERN.matcher(title);
 
             if (matcher.find()) {

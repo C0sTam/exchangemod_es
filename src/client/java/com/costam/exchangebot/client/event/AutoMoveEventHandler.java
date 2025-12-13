@@ -26,19 +26,21 @@ public class AutoMoveEventHandler {
                 long nowMs = System.currentTimeMillis();
                 if (enterAtMs == 0L) enterAtMs = nowMs;
                 String mode = ServerInfoUtil.getServerType();
-                if (!"LOBBY".equals(mode) && (nowMs - enterAtMs) < 60_000L) {
+                if (!"LOBBY".equalsIgnoreCase(mode) && (nowMs - enterAtMs) < 60_000L) {
                     moving = false;
                     client.options.leftKey.setPressed(false);
                     client.options.rightKey.setPressed(false);
                     return;
                 }
-                if ("BOXPVP".equals(mode)) {
+                if ("BOXPVP".equalsIgnoreCase(mode)) {
                     moving = false;
+                    tickCounter = 0;
+                    moveDuration = 0;
                     client.options.leftKey.setPressed(false);
                     client.options.rightKey.setPressed(false);
                     return;
                 }
-                if ("LOBBY".equals(mode)) {
+                if ("LOBBY".equalsIgnoreCase(mode)) {
                     long interval = lobbyRetrySlowMode ? 5_000L : 2_000L;
                     boolean shouldPress = lastLobbyUseMs == 0L || nowMs - lastLobbyUseMs >= interval;
                     if (shouldPress) {

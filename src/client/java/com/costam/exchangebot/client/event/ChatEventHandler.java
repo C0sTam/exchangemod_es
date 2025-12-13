@@ -210,9 +210,20 @@ public class ChatEventHandler {
                 LoggerUtil.info(String.format("Received trade request: sender='%s'", sender));
                 if(InventoryEventHandler.isBlocked()|| MinecraftClient.getInstance().currentScreen != null) return;
                 InventoryEventHandler.setBlocked(true);
-                ExchangebotClient.getWebSocketClient().sendPacket(new TransactionRequestPacket(sender));
-                LoggerUtil.info(String.format("Sending trade : sender='%s'", sender));
-                
+                TransactionUtil.setPendingStatsPlayerName(sender);
+                TransactionUtil.setWaitingStatsConfirmation(true);
+
+                long nowMs = System.currentTimeMillis();
+                long last = TransactionUtil.getLastStatsCommandAtMs();
+                long delay = Math.max(0, 1000 - (nowMs - last));
+                scheduler.schedule(() -> {
+                    MinecraftClient c = MinecraftClient.getInstance();
+                    if (c != null && c.player != null && c.player.networkHandler != null) {
+                        c.player.networkHandler.sendChatCommand("stats " + sender);
+                        TransactionUtil.setLastStatsCommandAtMs(System.currentTimeMillis());
+                        LoggerUtil.info(String.format("Sent /stats for '%s'", sender));
+                    }
+                }, delay, TimeUnit.MILLISECONDS);
             }
             Matcher notAvailblePattern = PLAYER_NOT_AVAILABLE_PATTERN.matcher(raw);
             if (notAvailblePattern.find()) {
