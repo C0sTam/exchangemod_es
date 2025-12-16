@@ -3,9 +3,12 @@ package com.costam.exchangebot.client.event;
 import com.costam.exchangebot.client.util.LoggerUtil;
 import com.costam.exchangebot.client.util.TransactionUtil;
 import com.costam.exchangebot.client.util.ServerInfoUtil;
+import com.costam.exchangebot.client.util.ColorStripUtils;
 import com.costam.exchangebot.client.ExchangebotClient;
 import com.costam.exchangebot.client.network.packet.outbound.TransactionRequestPacket;
 import com.costam.exchangebot.client.network.packet.outbound.PlayerStatsPacket;
+import com.costam.exchangebot.client.network.packet.outbound.UpdatePricePacket;
+import com.costam.exchangebot.client.models.Item;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -31,6 +34,8 @@ public class GuiEventHandler {
     private static final Pattern AMOUNT_PATTERN = Pattern.compile("\\$([0-9]+)");
     private static final Pattern AUTHOR_PATTERN = Pattern.compile("Wytworzył[: ]+([A-Za-z0-9_]+)");
     private static final Pattern STATS_GUI_PATTERN = Pattern.compile("Statystyki\\s+([A-Za-z0-9_\\-]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RYNEK_GUI_PATTERN = Pattern.compile("Rynek\\s+\\((\\d+)/(\\d+)\\)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PRICE_PATTERN = Pattern.compile("Koszt \\$([0-9,.]+(?:MLN|K)?)\\s*\\(\\$([0-9,]+)\\)", Pattern.CASE_INSENSITIVE);
 
     public record CheckData(String amount, String author) {}
     
@@ -47,6 +52,8 @@ public class GuiEventHandler {
     private static int garbageCurrentSlot = garbageStartSlot;
     static long garbageLastTime = 0L;
     private static long garbageDelayMs = 400;
+
+    private static String lastProcessedRynekPage = null;
 
 
 
@@ -271,6 +278,179 @@ public class GuiEventHandler {
                     }
                 }
             }
+            Matcher RynekMatcher = RYNEK_GUI_PATTERN.matcher(title);
+            if(RynekMatcher.find()) {
+                InventoryEventHandler.setBlocked(true);
+                String currentPage = RynekMatcher.group(1);
+                String totalPages = RynekMatcher.group(2);
+
+                // Sprawdź czy ta strona została już przetworzona
+                if (currentPage.equals(lastProcessedRynekPage)) {
+                    return; // Pomijamy, bo ta strona była już przetworzona
+                }
+
+                if(currentPage.equals(totalPages)) {
+                    // Oznacz stronę jako przetworzoną
+                    lastProcessedRynekPage = currentPage;
+
+                    if (client.player != null && client.player.currentScreenHandler != null) {
+                        client.player.closeHandledScreen();
+                    }
+
+                    // Wysyłanie UpdatePricePacket dla itemów ze zebranymi statystykami
+                    Item[] items = TransactionUtil.getItems();
+                    if (items != null && ExchangebotClient.getWebSocketClient().isOpen()) {
+                        for (Item item : items) {
+                            if (item.getLowestPrice() != null && item.getItemCount() != null && item.getItemCount() > 0) {
+                                ExchangebotClient.getWebSocketClient().sendPacket(
+                                    new UpdatePricePacket(
+                                        item.getId(),
+                                        item.getLowestPrice(),
+                                        item.getHighestPrice(),
+                                            (double) item.getTotalPrice() / item.getItemCount(),
+                                        item.getTotalPrice(),
+                                        item.getItemCount()
+                                    )
+                                );
+                                item.setLowestPrice(null);
+                                item.setHighestPrice(null);
+                                item.setTotalPrice(null);
+                                item.setItemCount(0);
+                            }
+                        }
+                    }
+                    InventoryEventHandler.setBlocked(false);
+                    // Zresetuj po zakończeniu całego procesu
+                    lastProcessedRynekPage = null;
+                } else {
+                    // Przeszukiwanie slotów w GUI Rynek (nie ostatnia strona)
+                    Item[] items = TransactionUtil.getItems();
+                    if (items != null && items.length > 0 && client.player.currentScreenHandler != null) {
+                        int[] slotsToCheck = {2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 20, 21, 22, 23, 24, 25, 26, 29, 30, 31, 32, 33, 34, 35};
+
+                        for (int slotIndex : slotsToCheck) {
+                            if (slotIndex >= client.player.currentScreenHandler.slots.size()) continue;
+
+                            ItemStack stackInSlot = client.player.currentScreenHandler.getSlot(slotIndex).getStack();
+                            if (stackInSlot.isEmpty()) continue;
+
+                            // Pobierz informacje o itemie ze slotu
+                            String slotMaterial = stackInSlot.getItem().toString().toLowerCase();
+                            LoggerUtil.info("[GuiEventHandler] Slot " + slotIndex + " material format: " + slotMaterial);
+                            var customNameComponent = stackInSlot.getComponents().get(DataComponentTypes.CUSTOM_NAME);
+                            String slotName = customNameComponent != null ? ColorStripUtils.stripAllColorsAndFormats(customNameComponent.getString()).toLowerCase() : null;
+                            var loreComponent = stackInSlot.getComponents().get(DataComponentTypes.LORE);
+                            String slotLore = null;
+                            if (loreComponent != null && !loreComponent.lines().isEmpty()) {
+                                // Pobierz wszystkie linie lore i połącz je w jeden string
+                                StringBuilder loreBuilder = new StringBuilder();
+                                for (int i = 0; i < loreComponent.lines().size(); i++) {
+                                    if (i > 0) loreBuilder.append(" ");
+                                    loreBuilder.append(ColorStripUtils.stripAllColorsAndFormats(loreComponent.lines().get(i).getString()));
+                                }
+                                slotLore = loreBuilder.toString().toLowerCase();
+                            }
+                            Integer slotCustomModelData = null;
+                            try {
+                                var customModelDataComponent = stackInSlot.getComponents().get(DataComponentTypes.CUSTOM_MODEL_DATA);
+                                if (customModelDataComponent != null) {
+                                    // Używamy reflection bo CustomModelDataComponent.value() może nie być dostępny w compile-time
+                                    slotCustomModelData = (Integer) customModelDataComponent.getClass().getMethod("value").invoke(customModelDataComponent);
+                                }
+                            } catch (Exception e) {
+                                // Ignorujemy błędy - customModelData pozostanie null
+                            }
+
+                            // Wyciągnij cenę z lore
+                            Double slotPrice = extractPriceFromLore(loreComponent);
+
+                            if (slotPrice == null) {
+                                continue;
+                            };
+
+                            // Szukaj dopasowania w items
+                            for (Item item : items) {
+
+                                boolean matches = true;
+
+                                // Przygotuj oczyszczone wartości z item dla porównania (bez formatowania, małe litery)
+                                String cleanItemMaterial = item.getMaterial() != null ? ColorStripUtils.stripAllColorsAndFormats(item.getMaterial()).toLowerCase() : null;
+                                String cleanItemName = item.getName() != null ? ColorStripUtils.stripAllColorsAndFormats(item.getName()).toLowerCase() : null;
+                                String cleanItemLore = item.getLore() != null ? ColorStripUtils.stripAllColorsAndFormats(item.getLore()).toLowerCase() : null;
+
+                                // Sprawdź material
+                                if (cleanItemMaterial != null && !slotMaterial.contains(cleanItemMaterial)) {
+                                    matches = false;
+                                }
+
+                                // Sprawdź name
+                                if (matches && cleanItemName != null && slotName != null && !slotName.contains(cleanItemName)) {
+                                    matches = false;
+                                }
+
+                                // Sprawdź lore
+                                if (matches && cleanItemLore != null && slotLore != null && !slotLore.contains(cleanItemLore)) {
+                                    matches = false;
+                                }
+
+                                // Sprawdź customModelData (tylko jeśli nie jest null w item)
+                                if (matches && item.getCustomModelData() != null) {
+                                    if (slotCustomModelData == null || !slotCustomModelData.equals(item.getCustomModelData())) {
+                                        matches = false;
+                                    }
+                                }
+
+                                // Jeśli dopasowanie - aktualizuj statystyki
+                                if (matches) {
+                                    int slotPriceInt = slotPrice.intValue();
+
+                                    // Zwiększ licznik itemów
+                                    int currentCount = item.getItemCount() != null ? item.getItemCount() : 0;
+                                    item.setItemCount(currentCount + 1);
+
+                                    // Aktualizuj najniższą cenę
+                                    Integer currentLowestPrice = item.getLowestPrice();
+                                    if (currentLowestPrice == null || slotPriceInt < currentLowestPrice) {
+                                        item.setLowestPrice(slotPriceInt);
+                                        LoggerUtil.info("[GuiEventHandler] Updated lowestPrice for itemId=" + item.getId() +
+                                            ", newPrice=" + slotPriceInt + " (slot " + slotIndex + ")");
+                                    }
+
+                                    // Aktualizuj najwyższą cenę
+                                    Integer currentHighestPrice = item.getHighestPrice();
+                                    if (currentHighestPrice == null || slotPriceInt > currentHighestPrice) {
+                                        item.setHighestPrice(slotPriceInt);
+                                        LoggerUtil.info("[GuiEventHandler] Updated highestPrice for itemId=" + item.getId() +
+                                            ", newPrice=" + slotPriceInt + " (slot " + slotIndex + ")");
+                                    }
+
+                                    // Aktualizuj totalPrice
+                                    Long currentTotalPrice = item.getTotalPrice() != null ? item.getTotalPrice() : 0L;
+                                    item.setTotalPrice(currentTotalPrice + slotPriceInt);
+
+                                }
+
+                            }
+                        }
+
+                        // Oznacz bieżącą stronę jako przetworzoną przed przejściem do następnej
+                        lastProcessedRynekPage = currentPage;
+
+                        // Po przejrzeniu wszystkich slotów, kliknij slot 50 (następna strona)
+                        if (client.player.currentScreenHandler != null && client.player.currentScreenHandler.slots.size() > 50) {
+                            LoggerUtil.info("[GuiEventHandler] Finished checking slots, clicking slot 50 (next page)");
+                            client.interactionManager.clickSlot(
+                                client.player.currentScreenHandler.syncId,
+                                50,
+                                0,
+                                SlotActionType.PICKUP,
+                                client.player
+                            );
+                        }
+                    }
+                }
+            }
+
 
             long now = System.currentTimeMillis();
             if(!running) currentSlot = startSlot;
@@ -428,6 +608,26 @@ public class GuiEventHandler {
         if (amount == null || author == null) return null;
         return new CheckData(amount, author);
     }
+
+    private static Double extractPriceFromLore(net.minecraft.component.type.LoreComponent loreComponent) {
+        if (loreComponent == null) return null;
+
+        for (Text line : loreComponent.lines()) {
+            String lineText = ColorStripUtils.stripAllColorsAndFormats(line.getString());
+            Matcher priceMatcher = PRICE_PATTERN.matcher(lineText);
+            if (priceMatcher.find()) {
+                // Użyj drugiej grupy (dokładna wartość w nawiasach)
+                String priceStr = priceMatcher.group(2).replace(",", "");
+                try {
+                    return Double.parseDouble(priceStr);
+                } catch (NumberFormatException e) {
+                    LoggerUtil.warn("[GuiEventHandler] Failed to parse price: " + priceStr);
+                }
+            }
+        }
+        return null;
+    }
+
     public static void setCurrentSlot(int currentSlot) {
         GuiEventHandler.currentSlot = currentSlot;
     }

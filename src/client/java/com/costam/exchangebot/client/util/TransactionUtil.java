@@ -71,7 +71,7 @@ public class TransactionUtil {
         lastTransactionAmount = null;
         lastTransactionBase64 = null;
     }
-    public Item[] getItems() {
+    public static Item[] getItems() {
         return items;
     }
 

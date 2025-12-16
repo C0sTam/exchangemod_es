@@ -6,6 +6,10 @@ public class Item {
     private String name;
     private String lore;
     private Integer customModelData;
+    private Integer lowestPrice = null;
+    private Integer highestPrice = null;
+    private Long totalPrice = null;
+    private Integer itemCount = 0;
 
     // Gettery
     public int getId() {
@@ -28,6 +32,23 @@ public class Item {
         return customModelData;
     }
 
+    public Integer getLowestPrice() {
+        return lowestPrice;
+    }
+
+    public Integer getHighestPrice() {
+        return highestPrice;
+    }
+
+
+    public Long getTotalPrice() {
+        return totalPrice;
+    }
+
+    public Integer getItemCount() {
+        return itemCount;
+    }
+
     // Settery (potrzebne dla deserializacji JSON)
     public void setId(int id) {
         this.id = id;
@@ -47,5 +68,22 @@ public class Item {
 
     public void setCustomModelData(Integer customModelData) {
         this.customModelData = customModelData;
+    }
+
+    public void setLowestPrice(Integer lowerPrice) {
+        this.lowestPrice = lowerPrice;
+    }
+
+    public void setHighestPrice(Integer highestPrice) {
+        this.highestPrice = highestPrice;
+    }
+
+
+    public void setTotalPrice(Long totalPrice) {
+        this.totalPrice = totalPrice;
+    }
+
+    public void setItemCount(Integer itemCount) {
+        this.itemCount = itemCount;
     }
 }
