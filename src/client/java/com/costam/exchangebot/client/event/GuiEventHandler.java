@@ -34,7 +34,7 @@ public class GuiEventHandler {
     private static final Pattern AMOUNT_PATTERN = Pattern.compile("\\$([0-9]+)");
     private static final Pattern AUTHOR_PATTERN = Pattern.compile("Wytworzył[: ]+([A-Za-z0-9_]+)");
     private static final Pattern STATS_GUI_PATTERN = Pattern.compile("Statystyki\\s+([A-Za-z0-9_\\-]+)", Pattern.CASE_INSENSITIVE);
-    private static final Pattern RYNEK_GUI_PATTERN = Pattern.compile("Rynek\\s+\\((\\d+)/(\\d+)\\)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RYNEK_GUI_PATTERN = Pattern.compile("(Rynek|Market)\\s+\\((\\d+)/(\\d+)\\)", Pattern.CASE_INSENSITIVE);
     private static final Pattern PRICE_PATTERN = Pattern.compile("Koszt \\$([0-9,.]+(?:MLN|K)?)\\s*\\(\\$([0-9,]+)\\)", Pattern.CASE_INSENSITIVE);
 
     public record CheckData(String amount, String author) {}
