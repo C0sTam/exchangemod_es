@@ -106,10 +106,6 @@ public class GuiEventHandler {
                         MinecraftClient.getInstance().execute(() -> {
                             if (MinecraftClient.getInstance().player != null && MinecraftClient.getInstance().player.currentScreenHandler != null) {
                                 ScreenHandler handler = MinecraftClient.getInstance().player.currentScreenHandler;
-                                ItemStack stack10 = handler.getSlot(10).getStack();
-                                String n = stack10.isEmpty() ? "" : stack10.getName().getString().toUpperCase();
-                                if (n.contains("SPAWN02")) ServerInfoUtil.setDesiredSpawnChannel("SPAWN02");
-                                else ServerInfoUtil.setDesiredSpawnChannel("SPAWN01");
                                 MinecraftClient.getInstance().interactionManager.clickSlot(
                                         handler.syncId,
                                         10,
@@ -119,7 +115,7 @@ public class GuiEventHandler {
                                 );
                             }
                         });
-                    }, 3, TimeUnit.SECONDS);
+                    }, 1, TimeUnit.SECONDS);
                 }
             }
             

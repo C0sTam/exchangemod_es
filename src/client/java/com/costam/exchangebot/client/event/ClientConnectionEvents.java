@@ -84,17 +84,14 @@ public class ClientConnectionEvents {
                 scheduler.schedule(() -> {
                     try {
                         String mode = ServerInfoUtil.getServerType();
-                        if ("LIFESTEAL".equals(mode) || "BOXPVP".equals(mode)) {
-                            boolean needCh = !ServerInfoUtil.isSpawn01ChannelOnScoreboard();
-                            if (needCh) {
-                                scheduler.schedule(() -> {
-                                    client.execute(() -> {
-                                        if (client.player != null && client.player.networkHandler != null && client.player.networkHandler.getConnection().isOpen()) {
-                                            client.player.networkHandler.sendChatCommand("ch");
-                                        }
-                                    });
-                                }, 7, TimeUnit.SECONDS);
-                            }
+                        if ("LIFESTEAL".equals(mode)) {
+                            scheduler.schedule(() -> {
+                                client.execute(() -> {
+                                    if (client.player != null && client.player.networkHandler != null && client.player.networkHandler.getConnection().isOpen()) {
+                                        client.player.networkHandler.sendChatCommand("ch");
+                                    }
+                                });
+                            }, 5, TimeUnit.SECONDS);
                         }
                     } catch (Exception ignored) { }
                 }, 3, TimeUnit.SECONDS);
