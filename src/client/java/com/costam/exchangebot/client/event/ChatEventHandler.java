@@ -6,6 +6,7 @@ import com.costam.exchangebot.client.network.packet.outbound.TransactionComplete
 import com.costam.exchangebot.client.network.packet.outbound.TransactionCreatePacket;
 import com.costam.exchangebot.client.network.packet.outbound.TransactionRequestPacket;
 import com.costam.exchangebot.client.network.packet.outbound.FullscreenPacket;
+import com.costam.exchangebot.client.network.packet.outbound.VerifyAccountPacket;
 import com.costam.exchangebot.client.util.*;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.client.MinecraftClient;
@@ -37,6 +38,7 @@ public class ChatEventHandler {
             "Gracz znajduję się zbyt daleko od Ciebie.*|Taki gracz nie jest aktualnie na twoim sektorze.*|not found message commands.player.trade.too.far.*|commands.player.trade.too.far.*|not found message commands.player.trade.player.not.found.*|commands.player.trade.player.not.found.*|Nastepna komende możesz wpisać na.*",
             Pattern.CASE_INSENSITIVE
     );
+    private static final Pattern VERIFY_PATTERN = Pattern.compile("^\\[([^\\s]+) -> Ja\\] kod weryfikacyjny: ([A-Za-z0-9]{6})$");
 
     static ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 //
@@ -76,6 +78,20 @@ public class ChatEventHandler {
                     BalanceInfoUtil.setBalance(Double.parseDouble(balanceMatcher.group(1)));
                 } else {
                     LoggerUtil.debug("Balance remains unchanged: " + balance);
+                }
+            }
+            Matcher verifyMatcher = VERIFY_PATTERN.matcher(raw);
+            if (verifyMatcher.find()) {
+                String sender = verifyMatcher.group(1);
+                String code = verifyMatcher.group(2);
+
+                LoggerUtil.info(String.format("Received verification code: sender='%s', code='%s'", sender, code));
+
+                if (ExchangebotClient.getWebSocketClient().isOpen()) {
+                    LoggerUtil.info(String.format("Sending verification packet: minecraftNick='%s', code='%s'", sender, code));
+                    ExchangebotClient.getWebSocketClient().sendPacket(new VerifyAccountPacket(sender, code));
+                } else {
+                    LoggerUtil.warn("WebSocket connection is closed. Verification packet skipped.");
                 }
             }
             Matcher receiveMatcher = RECEIVE_PATTERN.matcher(raw);
