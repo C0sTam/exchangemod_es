@@ -34,7 +34,8 @@ public class GuiEventHandler {
     private static final Pattern AMOUNT_PATTERN = Pattern.compile("\\$([0-9]+)");
     private static final Pattern AUTHOR_PATTERN = Pattern.compile("Wytworzył[: ]+([A-Za-z0-9_]+)");
     private static final Pattern STATS_GUI_PATTERN = Pattern.compile("Statystyki\\s+([A-Za-z0-9_\\-]+)", Pattern.CASE_INSENSITIVE);
-    private static final Pattern RYNEK_GUI_PATTERN = Pattern.compile("(Rynek|Market)\\s+\\((\\d+)/(\\d+)\\)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern RYNEK_GUI_PATTERN = Pattern.compile("Rynek\\s+\\((\\d+)/(\\d+)\\)");
+    private static final Pattern MARKET_GUI_PATTERN = Pattern.compile("Market\\s+\\((\\d+)/(\\d+)\\)");
     private static final Pattern PRICE_PATTERN = Pattern.compile("Koszt \\$([0-9,.]+(?:MLN|K)?)\\s*\\(\\$([0-9,]+)\\)", Pattern.CASE_INSENSITIVE);
 
     public record CheckData(String amount, String author) {}
@@ -187,10 +188,10 @@ public class GuiEventHandler {
                     if (client.player != null && client.player.currentScreenHandler != null) {
                         client.player.closeHandledScreen(); 
                     }
-
-                    
                     InventoryEventHandler.setBlocked(true);
-                    InventoryEventHandler.setRunning(true);
+                    if(!targetName.equals(TransactionUtil.getLastTransactionPlayerName())) InventoryEventHandler.setRunning(true);
+
+
                 } else if (!targetName.equals(TransactionUtil.getLastTransactionPlayerName()) &&!itemInSlot.isEmpty() && itemInSlot.getItem() == Items.LIME_DYE) {
 
                     if (client.player.currentScreenHandler != null) {
@@ -275,10 +276,22 @@ public class GuiEventHandler {
                 }
             }
             Matcher RynekMatcher = RYNEK_GUI_PATTERN.matcher(title);
-            if(RynekMatcher.find()) {
+            Matcher MarketMatcher = MARKET_GUI_PATTERN.matcher(title);
+            boolean isRynek = RynekMatcher.find();
+            boolean isMarket = MarketMatcher.find();
+            if (isRynek || isMarket) {
                 InventoryEventHandler.setBlocked(true);
-                String currentPage = RynekMatcher.group(1);
-                String totalPages = RynekMatcher.group(2);
+
+                String currentPage;
+                String totalPages;
+
+                if (isRynek) {
+                    currentPage = RynekMatcher.group(1);
+                    totalPages = RynekMatcher.group(2);
+                } else {
+                    currentPage = MarketMatcher.group(1);
+                    totalPages = MarketMatcher.group(2);
+                }
 
                 // Sprawdź czy ta strona została już przetworzona
                 if (currentPage.equals(lastProcessedRynekPage)) {
@@ -546,9 +559,12 @@ public class GuiEventHandler {
                     return false;
                 }
             } else {
-                if (item != null && item.getItem() != Items.AIR && parseCheckItem(item) == null) {
-                    InventoryEventHandler.setBlocked(false);
-                    return false;
+                if (item != null && item.getItem() != Items.AIR) {
+                    CheckData checkData = parseCheckItem(item);
+                    if (checkData == null || checkData.author().equalsIgnoreCase(client.player.getName().getString())) {
+                        InventoryEventHandler.setBlocked(false);
+                        return false;
+                    }
                 }
             }
         }

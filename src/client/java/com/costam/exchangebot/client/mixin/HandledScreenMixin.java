@@ -50,24 +50,18 @@ public class HandledScreenMixin {
         Matcher matcher = TRADE_GUI_PATTERN.matcher(titleString);
         if (matcher.find()) {
             String matchedName = matcher.group(1);
-            ItemStack stack45 = screen.getScreenHandler().getSlot(45).getStack();
 
-            if (matchedName.equals(TransactionUtil.getLastTransactionPlayerName())
-                    && !stack45.isEmpty() && stack45.getItem() == Items.LIME_DYE) {
-
+            if(matchedName.equals(TransactionUtil.getLastTransactionPlayerName())) {
                 TransactionUtil.setLastTransactionBase64(takeGuiScreenshotBase64(screen));
+                GuiEventHandler.setRunning(false);
+                GuiEventHandler.setCurrentSlot(0);
                 scheduler.schedule(() -> {
                     MinecraftClient.getInstance().execute(() -> {
                         InventoryEventHandler.setIsActive(true);
                     });
                 }, 1, TimeUnit.SECONDS);
-            }else if(matchedName.equals(TransactionUtil.getLastTransactionPlayerName())){
-
-                TransactionUtil.reset();
-                GuiEventHandler.setRunning(false);
-                GuiEventHandler.setCurrentSlot(0);
-                InventoryEventHandler.setRunning(true);
             }
+
         }
     }
      
