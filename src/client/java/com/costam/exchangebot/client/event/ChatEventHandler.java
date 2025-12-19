@@ -38,7 +38,7 @@ public class ChatEventHandler {
             "Gracz znajduję się zbyt daleko od Ciebie.*|Taki gracz nie jest aktualnie na twoim sektorze.*|not found message commands.player.trade.too.far.*|commands.player.trade.too.far.*|not found message commands.player.trade.player.not.found.*|commands.player.trade.player.not.found.*|Nastepna komende możesz wpisać na.*",
             Pattern.CASE_INSENSITIVE
     );
-    private static final Pattern VERIFY_PATTERN = Pattern.compile("^\\[([^\\s]+) -> Ja\\] kod weryfikacyjny: ([A-Za-z0-9]{6})$");
+    private static final Pattern VERIFY_PATTERN = Pattern.compile("^\\[(\\S+) -> Ja\\] kod weryfikacyjny: ([A-Za-z0-9]{6}).*");
 
     static ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 //
