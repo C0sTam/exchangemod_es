@@ -21,16 +21,16 @@ public class MenuPrevention {
 
     public static void register() {
         registered = true;
-        
-        // Apply default state immediately
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client != null && client.getWindow() != null) {
-            int mouseMode = preventToBackground ? InputUtil.GLFW_CURSOR_NORMAL : InputUtil.GLFW_CURSOR_DISABLED;
-            // Safe access to mouse coordinates
-            double x = (client.mouse != null) ? client.mouse.getX() : 0;
-            double y = (client.mouse != null) ? client.mouse.getY() : 0;
-            
-            InputUtil.setCursorParameters(client.getWindow().getHandle(), mouseMode, x, y);
+    }
+
+    public static void onTick(MinecraftClient client) {
+        if (!registered || client.player == null) return;
+
+        // Enforce cursor state every tick if active
+        if (preventToBackground && client.currentScreen == null) {
+             if (client.mouse.isCursorLocked()) {
+                 client.mouse.unlockCursor();
+             }
         }
     }
 
@@ -66,7 +66,10 @@ public class MenuPrevention {
 
         client.player.sendMessage(Text.translatable("Menu Prevention: ").append(preventToBackground ? ScreenTexts.ON : ScreenTexts.OFF), true);
 
-        int mouseMode = preventToBackground ? InputUtil.GLFW_CURSOR_NORMAL : InputUtil.GLFW_CURSOR_DISABLED;
-        InputUtil.setCursorParameters(client.getWindow().getHandle(), mouseMode, client.mouse.getX(), client.mouse.getY());
+        if (preventToBackground) {
+            client.mouse.unlockCursor();
+        } else {
+            client.mouse.lockCursor();
+        }
     }
 }
