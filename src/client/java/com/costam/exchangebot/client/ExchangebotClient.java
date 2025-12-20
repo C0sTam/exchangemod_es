@@ -8,6 +8,9 @@ import com.costam.exchangebot.client.util.ServerInfoUtil;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.multiplayer.ConnectScreen;
+import net.minecraft.client.network.ServerAddress;
+import net.minecraft.client.network.ServerInfo;
 
 public class ExchangebotClient implements ClientModInitializer {
 
@@ -27,6 +30,22 @@ public class ExchangebotClient implements ClientModInitializer {
         InventoryEventHandler.register();
         GuiEventHandler.register();
         AutoMoveEventHandler.register();
+
+        ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
+            new Thread(() -> {
+                try {
+                    Thread.sleep(30000); // Changed from 3000 to 30000 (30 seconds)
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                client.execute(() -> {
+                    if (client.getCurrentServerEntry() == null) {
+                        ServerInfo info = new ServerInfo("Anarchia", "anarchia.gg", ServerInfo.ServerType.OTHER);
+                        ConnectScreen.connect(client.currentScreen, client, ServerAddress.parse("anarchia.gg"), info, false, null);
+                    }
+                });
+            }).start();
+        });
 
     }
     public static WebSocketClient getWebSocketClient() {
