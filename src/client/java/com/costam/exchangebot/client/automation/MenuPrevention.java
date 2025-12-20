@@ -39,7 +39,7 @@ public class MenuPrevention {
         if (preventToBackground) {
             MinecraftClient client = MinecraftClient.getInstance();
             // Fallback text rendering
-            String text = "MOUSE UNLOCKED (BG MODE)";
+            String text = "MOUSE UNLOCKED (BG MODE) (key: P)";
             int width = client.textRenderer.getWidth(text);
             int x = (client.getWindow().getScaledWidth() - width) / 2;
             int y = client.getWindow().getScaledHeight() / 2 + 10;
