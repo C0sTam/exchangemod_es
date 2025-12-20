@@ -23,6 +23,10 @@ public class AutoMoveEventHandler {
         movementDisabledUntil = System.currentTimeMillis() + durationMs;
     }
 
+    public static boolean isMovementDisabled() {
+        return System.currentTimeMillis() < movementDisabledUntil;
+    }
+
     public static void register() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             tickCounter++;
@@ -38,6 +42,16 @@ public class AutoMoveEventHandler {
 
                 String mode = ServerInfoUtil.getServerType();
                 if ("LOBBY".equalsIgnoreCase(mode)) {
+                    long interval = lobbyRetrySlowMode ? 5_000L : 2_000L;
+                    boolean shouldPress = lastLobbyUseMs == 0L || nowMs - lastLobbyUseMs >= interval;
+                    if (shouldPress) {
+                        lastLobbyUseMs = nowMs;
+                        client.options.useKey.setPressed(true);
+                        scheduler.schedule(() -> {
+                            client.execute(() -> client.options.useKey.setPressed(false));
+                        }, 300, TimeUnit.MILLISECONDS);
+                    }
+
                     moving = false;
                     client.options.leftKey.setPressed(false);
                     client.options.rightKey.setPressed(false);
