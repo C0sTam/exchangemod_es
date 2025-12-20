@@ -437,16 +437,19 @@ public class GuiEventHandler {
                                 if (matches) {
                                     int slotPriceInt = slotPrice.intValue();
 
-                                    // Zwiększ licznik itemów
+                                    // Pobierz ilość itemów w stacku
+                                    int stackCount = stackInSlot.getCount();
+
+                                    // Zwiększ licznik itemów o wielkość stacka
                                     int currentCount = item.getItemCount() != null ? item.getItemCount() : 0;
-                                    item.setItemCount(currentCount + 1);
+                                    item.setItemCount(currentCount + stackCount);
 
                                     // Aktualizuj najniższą cenę
                                     Integer currentLowestPrice = item.getLowestPrice();
                                     if (currentLowestPrice == null || slotPriceInt < currentLowestPrice) {
                                         item.setLowestPrice(slotPriceInt);
                                         LoggerUtil.info("[GuiEventHandler] Updated lowestPrice for itemId=" + item.getId() +
-                                            ", newPrice=" + slotPriceInt + " (slot " + slotIndex + ")");
+                                            ", newPrice=" + slotPriceInt + " (slot " + slotIndex + ", stackCount=" + stackCount + ")");
                                     }
 
                                     // Aktualizuj najwyższą cenę
@@ -454,10 +457,10 @@ public class GuiEventHandler {
                                     if (currentHighestPrice == null || slotPriceInt > currentHighestPrice) {
                                         item.setHighestPrice(slotPriceInt);
                                         LoggerUtil.info("[GuiEventHandler] Updated highestPrice for itemId=" + item.getId() +
-                                            ", newPrice=" + slotPriceInt + " (slot " + slotIndex + ")");
+                                            ", newPrice=" + slotPriceInt + " (slot " + slotIndex + ", stackCount=" + stackCount + ")");
                                     }
 
-                                    // Aktualizuj totalPrice
+                                    // Aktualizuj totalPrice (mnożymy cenę przez ilość w stacku)
                                     Long currentTotalPrice = item.getTotalPrice() != null ? item.getTotalPrice() : 0L;
                                     item.setTotalPrice(currentTotalPrice + slotPriceInt);
 
