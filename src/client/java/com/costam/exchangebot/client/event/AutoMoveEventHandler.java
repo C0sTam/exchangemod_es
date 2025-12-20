@@ -16,22 +16,34 @@ public class AutoMoveEventHandler {
     private static boolean moveLeft = true;
     private static long lastLobbyUseMs = 0L;
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private static long enterAtMs = 0L;
     private static volatile boolean lobbyRetrySlowMode = false;
+    private static long movementDisabledUntil = 0L;
+
+    public static void disableMovementFor(long durationMs) {
+        movementDisabledUntil = System.currentTimeMillis() + durationMs;
+    }
 
     public static void register() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             tickCounter++;
             if (client.player != null && client.currentScreen == null) {
                 long nowMs = System.currentTimeMillis();
-                if (enterAtMs == 0L) enterAtMs = nowMs;
-                String mode = ServerInfoUtil.getServerType();
-                if (!"LOBBY".equalsIgnoreCase(mode) && (nowMs - enterAtMs) < 60_000L) {
+
+                if (nowMs < movementDisabledUntil) {
                     moving = false;
                     client.options.leftKey.setPressed(false);
                     client.options.rightKey.setPressed(false);
                     return;
                 }
+
+                String mode = ServerInfoUtil.getServerType();
+                if ("LOBBY".equalsIgnoreCase(mode)) {
+                    moving = false;
+                    client.options.leftKey.setPressed(false);
+                    client.options.rightKey.setPressed(false);
+                    return;
+                }
+
                 if ("BOXPVP".equalsIgnoreCase(mode)) {
                     moving = false;
                     tickCounter = 0;
@@ -40,17 +52,7 @@ public class AutoMoveEventHandler {
                     client.options.rightKey.setPressed(false);
                     return;
                 }
-                if ("LOBBY".equalsIgnoreCase(mode)) {
-                    long interval = lobbyRetrySlowMode ? 5_000L : 2_000L;
-                    boolean shouldPress = lastLobbyUseMs == 0L || nowMs - lastLobbyUseMs >= interval;
-                    if (shouldPress) {
-                        lastLobbyUseMs = nowMs;
-                        client.options.useKey.setPressed(true);
-                        scheduler.schedule(() -> {
-                            client.execute(() -> client.options.useKey.setPressed(false));
-                        }, 300, TimeUnit.MILLISECONDS);
-                    }
-                }
+                
                 if (!moving && tickCounter >= ticksPerMinute) {
 
                     tickCounter = 0;

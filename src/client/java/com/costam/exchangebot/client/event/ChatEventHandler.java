@@ -256,6 +256,10 @@ public class ChatEventHandler {
                 AutoMoveEventHandler.setLobbyRetrySlowMode(true);
             }
 
+            if (raw.contains("Trwa przenoszenie...")) {
+                AutoMoveEventHandler.disableMovementFor(60_000L);
+            }
+
         });
     }
 }
