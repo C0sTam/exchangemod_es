@@ -11,7 +11,11 @@ import com.costam.exchangebot.client.network.packet.outbound.UpdatePricePacket;
 import com.costam.exchangebot.client.models.Item;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ingame.BookScreen;
+import net.minecraft.client.gui.screen.ingame.LecternScreen;
+import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -77,6 +81,26 @@ public class GuiEventHandler {
 
             
             String title = currentScreen.getTitle().getString();
+
+            if (title.contains("This server requires") || title.contains("resource pack") || title.contains("paczki zasobów")) {
+                if (currentScreen != lastScreen) {
+                    lastScreen = currentScreen;
+                    screenOpenTime = System.currentTimeMillis();
+                    scheduler.schedule(() -> {
+                        clickButton(client, currentScreen, "Proceed", "Yes", "Tak", "Zatwierdź", "Akceptuj");
+                    }, 500, TimeUnit.MILLISECONDS);
+                }
+            }
+
+            if (currentScreen instanceof BookScreen || currentScreen instanceof LecternScreen) {
+                if (currentScreen != lastScreen) {
+                    lastScreen = currentScreen;
+                    screenOpenTime = System.currentTimeMillis();
+                    scheduler.schedule(() -> {
+                        clickButton(client, currentScreen, "Done", "Gotowe", "Zakończ");
+                    }, 500, TimeUnit.MILLISECONDS);
+                }
+            }
 
             if ("Wybierz tryb".equalsIgnoreCase(title)) {
                 if (currentScreen != lastScreen) {
@@ -645,6 +669,23 @@ public class GuiEventHandler {
     }
     public static void setRunning(boolean running) {
         GuiEventHandler.running = running;
+    }
+
+    private static void clickButton(MinecraftClient client, Screen screen, String... buttonTexts) {
+        client.execute(() -> {
+            if (screen == null) return;
+            for (Element element : screen.children()) {
+                if (element instanceof PressableWidget button) {
+                    String buttonMessage = button.getMessage().getString();
+                    for (String text : buttonTexts) {
+                        if (buttonMessage.equalsIgnoreCase(text)) {
+                            button.onPress();
+                            return;
+                        }
+                    }
+                }
+            }
+        });
     }
 
 }

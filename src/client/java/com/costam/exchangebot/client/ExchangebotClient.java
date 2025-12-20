@@ -7,6 +7,7 @@ import com.costam.exchangebot.client.util.BalanceInfoUtil;
 import com.costam.exchangebot.client.util.ServerInfoUtil;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.multiplayer.ConnectScreen;
 import net.minecraft.client.network.ServerAddress;
@@ -49,6 +50,13 @@ public class ExchangebotClient implements ClientModInitializer {
                 });
             }).start();
         });
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.getWindow() != null && client.getSession() != null) {
+                client.getWindow().setTitle(client.getSession().getUsername());
+            }
+        });
+
 
     }
     public static WebSocketClient getWebSocketClient() {
