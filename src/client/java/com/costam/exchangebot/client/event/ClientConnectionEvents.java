@@ -61,6 +61,8 @@ public class ClientConnectionEvents {
                     String modeNow = ServerInfoUtil.getServerType();
                     if ("LIFESTEAL".equals(modeNow)) {
                         ServerInfoUtil.markLifestealEnter();
+                    } else {
+                        ServerInfoUtil.resetLifestealEnter();
                     }
 
                     scheduler.schedule(() -> {
@@ -88,6 +90,9 @@ public class ClientConnectionEvents {
                     try {
                         String mode = ServerInfoUtil.getServerType();
                         if ("LIFESTEAL".equals(mode)) {
+                            if (!ServerInfoUtil.isLifestealInCooldown()) {
+                                ServerInfoUtil.markLifestealEnter();
+                            }
                             if (homeTask != null && !homeTask.isDone()) homeTask.cancel(false);
 
                             homeTask = scheduler.scheduleWithFixedDelay(() -> {

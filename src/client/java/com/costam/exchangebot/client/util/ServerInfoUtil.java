@@ -36,7 +36,6 @@ public class ServerInfoUtil {
         }
 
         String brandUpper = brandLower.toUpperCase();
-        if (brandUpper.startsWith("BOXPVP")) return "BOXPVP";
         if (brandUpper.startsWith("LOBBY")||brandUpper.startsWith("S")) return "LOBBY";
         if (brandUpper.startsWith("SPAWN")) return "LIFESTEAL";
 
@@ -136,6 +135,7 @@ public class ServerInfoUtil {
         else desiredSpawnChannel = channel.toUpperCase().contains("SPAWN02") ? "SPAWN02" : "SPAWN01";
     }
     public static void markLifestealEnter() { lifestealEnterAtMs = System.currentTimeMillis(); }
+    public static void resetLifestealEnter() { lifestealEnterAtMs = 0L; }
     public static boolean isLifestealInCooldown() {
         String mode = getServerType();
         return "LIFESTEAL".equals(mode) && lifestealEnterAtMs != 0L && (System.currentTimeMillis() - lifestealEnterAtMs) < 60_000L;
