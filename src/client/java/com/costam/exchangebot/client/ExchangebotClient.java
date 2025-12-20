@@ -32,6 +32,9 @@ public class ExchangebotClient implements ClientModInitializer {
         AutoMoveEventHandler.register();
 
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
+            if (client.getSession() != null) {
+                client.getWindow().setTitle(client.getSession().getUsername());
+            }
             new Thread(() -> {
                 try {
                     Thread.sleep(30000); // Changed from 3000 to 30000 (30 seconds)
