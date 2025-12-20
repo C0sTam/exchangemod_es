@@ -18,9 +18,6 @@ public class SendMessagePacket implements InboundPacket {
     public void handle() {
         LoggerUtil.info("Received SEND_MESSAGE packet. Content: " + content);
 
-        if ("/ah".equals(content)) {
-            return;
-        }
 
         if (MinecraftClient.getInstance().player != null) {
             if (CommandUtil.isDispatcherReady() &&
