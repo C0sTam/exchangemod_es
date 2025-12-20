@@ -108,7 +108,7 @@ public class ClientConnectionEvents {
                                                     if (client.player != null && client.player.currentScreenHandler != null) {
                                                         client.interactionManager.clickSlot(
                                                                 client.player.currentScreenHandler.syncId,
-                                                                21,
+                                                                20,
                                                                 0,
                                                                 SlotActionType.PICKUP,
                                                                 client.player
