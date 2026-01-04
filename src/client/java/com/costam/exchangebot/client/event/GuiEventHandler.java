@@ -493,31 +493,6 @@ public class GuiEventHandler {
             if (running && now - lastTime >= delayMs) {
                 lastTime = now;
 
-
-                int slotId = currentSlot; 
-                if (client.player.currentScreenHandler != null) {
-                    int targetSlot = 81 + slotId;
-                    if (targetSlot >= 0 && targetSlot < client.player.currentScreenHandler.slots.size()) {
-                        ItemStack stackInSlot = client.player.currentScreenHandler.getSlot(targetSlot).getStack();
-                        if (parseCheckItem(stackInSlot) != null&& !stackInSlot.isEmpty()) {
-                            client.interactionManager.clickSlot(
-                                    client.player.currentScreenHandler.syncId,
-                                    targetSlot,
-                                    0,
-                                    SlotActionType.QUICK_MOVE,
-                                    client.player
-                            );
-                        }else{
-                            lastTime = lastTime - delayMs;
-                        }
-
-                    }
-
-                }
-
-
-
-                currentSlot++;
                 if (currentSlot > endSlot) {
                     currentSlot = startSlot;
                     running = false;
@@ -557,7 +532,33 @@ public class GuiEventHandler {
                         InventoryEventHandler.setBlocked(true);
                         InventoryEventHandler.setRunning(true);
                     }
+                    return;
                 }
+
+                int slotId = currentSlot; 
+                if (client.player.currentScreenHandler != null) {
+                    int targetSlot = 81 + slotId;
+                    if (targetSlot >= 0 && targetSlot < client.player.currentScreenHandler.slots.size()) {
+                        ItemStack stackInSlot = client.player.currentScreenHandler.getSlot(targetSlot).getStack();
+                        if (parseCheckItem(stackInSlot) != null&& !stackInSlot.isEmpty()) {
+                            client.interactionManager.clickSlot(
+                                    client.player.currentScreenHandler.syncId,
+                                    targetSlot,
+                                    0,
+                                    SlotActionType.QUICK_MOVE,
+                                    client.player
+                            );
+                        }else{
+                            lastTime = lastTime - delayMs;
+                        }
+
+                    }
+
+                }
+
+
+
+                currentSlot++;
             }
 
         });
