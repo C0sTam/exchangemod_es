@@ -72,7 +72,7 @@ public class ExchangebotClient implements ClientModInitializer {
             }
             new Thread(() -> {
                 try {
-                    Thread.sleep(30000); // Changed from 3000 to 30000 (30 seconds)
+                    Thread.sleep(10000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
