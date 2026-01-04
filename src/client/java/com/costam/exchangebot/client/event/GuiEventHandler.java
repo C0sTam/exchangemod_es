@@ -164,11 +164,13 @@ public class GuiEventHandler {
                     }
                     TransactionUtil.setPendingStatsPlayerName(null);
                     TransactionUtil.setWaitingStatsConfirmation(false);
-                    MinecraftClient.getInstance().execute(() -> {
-                        if (ExchangebotClient.getWebSocketClient().isOpen()) {
-                            ExchangebotClient.getWebSocketClient().sendPacket(new TransactionRequestPacket(statsName));
-                        }
-                    });
+                    scheduler.schedule(() -> {
+                        MinecraftClient.getInstance().execute(() -> {
+                            if (ExchangebotClient.getWebSocketClient().isOpen()) {
+                                ExchangebotClient.getWebSocketClient().sendPacket(new TransactionRequestPacket(statsName));
+                            }
+                        });
+                    }, 1, TimeUnit.SECONDS);
                     return;
                 }
             }
