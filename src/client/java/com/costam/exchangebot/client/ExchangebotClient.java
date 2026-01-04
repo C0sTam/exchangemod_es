@@ -13,6 +13,8 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.multiplayer.ConnectScreen;
+import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
+import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.network.ServerAddress;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.option.KeyBinding;
@@ -76,6 +78,19 @@ public class ExchangebotClient implements ClientModInitializer {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+
+                client.execute(() -> {
+                    if (client.getCurrentServerEntry() == null) {
+                        client.setScreen(new MultiplayerScreen(new TitleScreen()));
+                    }
+                });
+
+                try {
+                    Thread.sleep(2000); // Changed from 1000 to 2000
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
                 client.execute(() -> {
                     if (client.getCurrentServerEntry() == null) {
                         ServerInfo info = new ServerInfo("Anarchia", "anarchia.gg", ServerInfo.ServerType.OTHER);
