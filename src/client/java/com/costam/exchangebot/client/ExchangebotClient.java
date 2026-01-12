@@ -30,7 +30,7 @@ public class ExchangebotClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        webSocketClient = new WebSocketClient("ws://localhost:8080");
+        webSocketClient = new WebSocketClient("ws://localhost:8081");
         webSocketClient.connect();
         String username = MinecraftClient.getInstance().getSession().getUsername();
         ServerInfoUtil.setPreferredModeForUsername(username);
