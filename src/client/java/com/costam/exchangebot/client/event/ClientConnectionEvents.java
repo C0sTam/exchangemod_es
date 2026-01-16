@@ -16,11 +16,9 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ServerAddress;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.text.Text;
-import net.minecraft.screen.slot.SlotActionType;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class ClientConnectionEvents {
@@ -31,7 +29,6 @@ public class ClientConnectionEvents {
     private static final int RECONNECT_DELAY_SECONDS = 3;
     private static final int CONNECT_TIMEOUT_SECONDS = 60;
     private static volatile boolean reconnectBlockedByCommand = false;
-    private static ScheduledFuture<?> homeTask;
     public static void register() {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             ServerInfoUtil.captureCurrentServer();
@@ -93,38 +90,6 @@ public class ClientConnectionEvents {
                             if (!ServerInfoUtil.isLifestealInCooldown()) {
                                 ServerInfoUtil.markLifestealEnter();
                             }
-                            if (homeTask != null && !homeTask.isDone()) homeTask.cancel(false);
-
-                            homeTask = scheduler.scheduleWithFixedDelay(() -> {
-                                client.execute(() -> {
-                                    try {
-                                        if (client.player == null || client.player.networkHandler == null) return;
-
-                                        if (client.currentScreen != null) {
-                                            if (homeTask != null) homeTask.cancel(false);
-
-                                            scheduler.schedule(() -> {
-                                                client.execute(() -> {
-                                                    if (client.player != null && client.player.currentScreenHandler != null) {
-                                                        client.interactionManager.clickSlot(
-                                                                client.player.currentScreenHandler.syncId,
-                                                                20,
-                                                                0,
-                                                                SlotActionType.PICKUP,
-                                                                client.player
-                                                        );
-                                                    }
-                                                });
-                                            }, 2, TimeUnit.SECONDS);
-                                            return;
-                                        }
-
-                                        client.player.networkHandler.sendChatCommand("home");
-                                    } catch (Exception e) {
-                                        LoggerUtil.error("Error in home loop: " + e.getMessage());
-                                    }
-                                });
-                            }, 5, 5, TimeUnit.SECONDS);
                         }
                     } catch (Exception ignored) { }
                 }, 3, TimeUnit.SECONDS);
@@ -182,7 +147,6 @@ public class ClientConnectionEvents {
         });
 
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            if (homeTask != null) homeTask.cancel(false);
             
             LoggerUtil.info("Player disconnected from the game.");
             WebSocketClient wsClient = ExchangebotClient.getWebSocketClient();

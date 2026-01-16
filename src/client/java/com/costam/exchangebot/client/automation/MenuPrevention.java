@@ -36,6 +36,7 @@ public class MenuPrevention {
 
     public static void renderIcon(DrawContext context) {
         // Rendering the text to show that menu opening is blocked and the mouse can be used freely
+        /*
         if (preventToBackground) {
             MinecraftClient client = MinecraftClient.getInstance();
             // Fallback text rendering
@@ -45,6 +46,7 @@ public class MenuPrevention {
             int y = client.getWindow().getScaledHeight() / 2 + 10;
             context.drawText(client.textRenderer, text, x, y, 0xFF5555, true);
         }
+        */
     }
 
     public static void toggleBackgroundPrevention() {
