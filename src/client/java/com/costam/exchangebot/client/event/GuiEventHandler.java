@@ -184,7 +184,7 @@ public class GuiEventHandler {
                     screenOpenTime = System.currentTimeMillis();
                 } else {
                     long now = System.currentTimeMillis();
-                    if (now - screenOpenTime >= 30_000) { 
+                    if (now - screenOpenTime >= 20_000) { 
                         if (client.player != null && client.player.currentScreenHandler != null) {
                             client.player.closeHandledScreen();
                         }
