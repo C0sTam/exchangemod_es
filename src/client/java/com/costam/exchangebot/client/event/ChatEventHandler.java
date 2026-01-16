@@ -12,6 +12,10 @@ import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.util.Window;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import com.costam.exchangebot.client.mixin.ChatHudAccessor;
+import java.util.concurrent.ScheduledFuture;
 import org.lwjgl.opengl.GL11;
 
 import javax.imageio.ImageIO;
@@ -39,8 +43,13 @@ public class ChatEventHandler {
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern VERIFY_PATTERN = Pattern.compile("^\\[(\\S+) -> Ja\\] kod weryfikacyjny: ([A-Za-z0-9]{6}).*");
+    private static final Pattern COMMAND_COOLDOWN_PATTERN = Pattern.compile("Nast[eę]pna komend[aeę] możesz wpisać na.*", Pattern.CASE_INSENSITIVE);
+    private static final Pattern AFK_BLOCK_PATTERN = Pattern.compile("Ta komenda jest zablokowana na sektorze AFK!", Pattern.CASE_INSENSITIVE);
+    private static final Pattern TELEPORT_SOON_PATTERN = Pattern.compile("Zostaniesz przeteleportowany za 5s!", Pattern.CASE_INSENSITIVE);
 
     static ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private static volatile boolean spawnAwaitTeleport = false;
+    private static ScheduledFuture<?> spawnRetryTask;
 //
 
 
@@ -48,6 +57,30 @@ public class ChatEventHandler {
     public static void register() {
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
             String raw = ColorStripUtils.stripAllColorsAndFormats(message.getString());
+            if (raw.contains("[ExchangeBot] Account:") || raw.contains("[ExchangeBot] Acccount:")) {
+                AutoMoveEventHandler.disableMovementFor(60_000L);
+            }
+            if (AFK_BLOCK_PATTERN.matcher(raw).find()) {
+                MinecraftClient client = MinecraftClient.getInstance();
+                spawnAwaitTeleport = true;
+                if (client != null && client.player != null && client.player.networkHandler != null && client.player.networkHandler.getConnection().isOpen()) {
+                    client.execute(() -> client.player.networkHandler.sendChatCommand("spawn"));
+                }
+                if (spawnRetryTask != null && !spawnRetryTask.isDone()) spawnRetryTask.cancel(false);
+                spawnRetryTask = scheduler.scheduleWithFixedDelay(() -> {
+                    if (!spawnAwaitTeleport) return;
+                    MinecraftClient c = MinecraftClient.getInstance();
+                    if (c != null && c.player != null && c.player.networkHandler != null && c.player.networkHandler.getConnection().isOpen()) {
+                        c.execute(() -> c.player.networkHandler.sendChatCommand("spawn"));
+                    }
+                }, 3, 3, TimeUnit.SECONDS);
+            }
+            if (TELEPORT_SOON_PATTERN.matcher(raw).find()) {
+                if (spawnAwaitTeleport) {
+                    spawnAwaitTeleport = false;
+                    if (spawnRetryTask != null) spawnRetryTask.cancel(false);
+                }
+            }
             if (raw.contains("Zweryfikowano czynnik zaufania") && raw.contains("Możesz kontynuować grę")) {
                 if (!"LOBBY".equals(ServerInfoUtil.getServerType())) {
                     scheduler.schedule(() -> {
@@ -244,12 +277,37 @@ public class ChatEventHandler {
             Matcher notAvailblePattern = PLAYER_NOT_AVAILABLE_PATTERN.matcher(raw);
             if (notAvailblePattern.find()) {
 
-                if(!InventoryEventHandler.isBlocked()) {
-                    InventoryEventHandler.setBlocked(true);
-                    LoggerUtil.info("Player not available, blocking inventory.");
+                Matcher cooldownMatcher = COMMAND_COOLDOWN_PATTERN.matcher(raw);
+                if (cooldownMatcher.find()) {
+                    MinecraftClient client = MinecraftClient.getInstance();
+                    boolean hasPaper = false;
+                    if (client != null && client.player != null && client.player.getInventory() != null) {
+                        for (int slot = 0; slot < 9; slot++) {
+                            ItemStack stack = client.player.getInventory().getStack(slot);
+                            if (stack != null && !stack.isEmpty() && stack.getItem() == Items.PAPER) {
+                                hasPaper = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (hasPaper) {
+                        if(!InventoryEventHandler.isBlocked()) {
+                            InventoryEventHandler.setBlocked(true);
+                        }
+                        InventoryEventHandler.setRunning(true);
+                        TransactionUtil.reset();
+                        LoggerUtil.info("Cooldown message detected and paper found on hotbar — starting hotbar sequence.");
+                    } else {
+                        LoggerUtil.info("Cooldown message detected but no paper on hotbar — ignoring.");
+                    }
+                } else {
+                    if(!InventoryEventHandler.isBlocked()) {
+                        InventoryEventHandler.setBlocked(true);
+                        LoggerUtil.info("Player not available, blocking inventory.");
+                    }
+                    InventoryEventHandler.setRunning(true);
+                    TransactionUtil.reset();
                 }
-                InventoryEventHandler.setRunning(true);
-                TransactionUtil.reset();
             }
 
             if (raw.contains("Serwer jest niedostępny! Brak aktywnego kanału")) {

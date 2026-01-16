@@ -16,6 +16,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ServerAddress;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.text.Text;
+import net.minecraft.screen.slot.SlotActionType;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -29,6 +30,8 @@ public class ClientConnectionEvents {
     private static final int RECONNECT_DELAY_SECONDS = 3;
     private static final int CONNECT_TIMEOUT_SECONDS = 60;
     private static volatile boolean reconnectBlockedByCommand = false;
+    private static java.util.concurrent.ScheduledFuture<?> lifestealChGuiTask;
+    private static java.util.concurrent.ScheduledFuture<?> lifestealHomeGuiTask;
     public static void register() {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             ServerInfoUtil.captureCurrentServer();
@@ -97,6 +100,58 @@ public class ClientConnectionEvents {
                 scheduler.schedule(() -> {
                     try {
                         String mode = ServerInfoUtil.getServerType();
+                        if ("LIFESTEAL".equals(mode)) {
+                            InventoryEventHandler.setBlocked(true);
+                            InventoryEventHandler.setRunning(false);
+                            TransactionUtil.reset();
+                            client.execute(() -> {
+                                if (client.player != null && client.player.networkHandler != null && client.player.networkHandler.getConnection().isOpen()) {
+                                    client.player.networkHandler.sendChatCommand("ch");
+                                }
+                            });
+                            lifestealChGuiTask = scheduler.scheduleWithFixedDelay(() -> {
+                                client.execute(() -> {
+                                    if (client.player == null || client.player.currentScreenHandler == null) return;
+                                    client.interactionManager.clickSlot(
+                                            client.player.currentScreenHandler.syncId,
+                                            10,
+                                            0,
+                                            SlotActionType.PICKUP,
+                                            client.player
+                                    );
+                                    if (lifestealChGuiTask != null) lifestealChGuiTask.cancel(false);
+                                    scheduler.schedule(() -> {
+                                        client.execute(() -> {
+                                            if (client.player != null && client.player.networkHandler != null && client.player.networkHandler.getConnection().isOpen()) {
+                                                client.player.networkHandler.sendChatCommand("home");
+                                            }
+                                        });
+                                        lifestealHomeGuiTask = scheduler.scheduleWithFixedDelay(() -> {
+                                            client.execute(() -> {
+                                                if (client.player == null || client.player.currentScreenHandler == null) return;
+                                                client.interactionManager.clickSlot(
+                                                        client.player.currentScreenHandler.syncId,
+                                                        20,
+                                                        0,
+                                                        SlotActionType.PICKUP,
+                                                        client.player
+                                                );
+                                                if (lifestealHomeGuiTask != null) lifestealHomeGuiTask.cancel(false);
+                                                scheduler.schedule(() -> {
+                                                    InventoryEventHandler.setBlocked(false);
+                                                }, 10, TimeUnit.SECONDS);
+                                            });
+                                        }, 200, 200, TimeUnit.MILLISECONDS);
+                                    }, 3, TimeUnit.SECONDS);
+                                });
+                            }, 200, 200, TimeUnit.MILLISECONDS);
+                        }
+                    } catch (Exception ignored) { }
+                }, 5, TimeUnit.SECONDS);
+
+                scheduler.schedule(() -> {
+                    try {
+                        String mode = ServerInfoUtil.getServerType();
                         if ("LIFESTEAL".equals(mode) || "BOXPVP".equals(mode)) {
                             client.execute(() -> {
                                 if (client.currentScreen != null) {
@@ -147,6 +202,9 @@ public class ClientConnectionEvents {
         });
 
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            if (lifestealChGuiTask != null) lifestealChGuiTask.cancel(false);
+            if (lifestealHomeGuiTask != null) lifestealHomeGuiTask.cancel(false);
+            InventoryEventHandler.setBlocked(false);
             
             LoggerUtil.info("Player disconnected from the game.");
             WebSocketClient wsClient = ExchangebotClient.getWebSocketClient();
