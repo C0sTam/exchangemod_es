@@ -29,7 +29,6 @@ public class SendTradePacket implements InboundPacket {
 
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
-        if (InventoryEventHandler.isBlocked() || client.currentScreen != null) return;
         if (!CommandUtil.isDispatcherReady() || !client.player.networkHandler.getConnection().isOpen()) return;
 
         TransactionUtil.setLastTransactionId(transactionId);

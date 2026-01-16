@@ -12,8 +12,6 @@ import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.util.Window;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import com.costam.exchangebot.client.mixin.ChatHudAccessor;
 import java.util.concurrent.ScheduledFuture;
 import org.lwjgl.opengl.GL11;
@@ -43,7 +41,6 @@ public class ChatEventHandler {
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern VERIFY_PATTERN = Pattern.compile("^\\[(\\S+) -> Ja\\] kod weryfikacyjny: ([A-Za-z0-9]{6}).*");
-    private static final Pattern COMMAND_COOLDOWN_PATTERN = Pattern.compile("Nast[eę]pna komend[aeę] możesz wpisać na.*", Pattern.CASE_INSENSITIVE);
     private static final Pattern AFK_BLOCK_PATTERN = Pattern.compile("Ta komenda jest zablokowana na sektorze AFK!", Pattern.CASE_INSENSITIVE);
     private static final Pattern TELEPORT_SOON_PATTERN = Pattern.compile("Zostaniesz przeteleportowany za 5s!", Pattern.CASE_INSENSITIVE);
 
@@ -276,38 +273,12 @@ public class ChatEventHandler {
             }
             Matcher notAvailblePattern = PLAYER_NOT_AVAILABLE_PATTERN.matcher(raw);
             if (notAvailblePattern.find()) {
-
-                Matcher cooldownMatcher = COMMAND_COOLDOWN_PATTERN.matcher(raw);
-                if (cooldownMatcher.find()) {
-                    MinecraftClient client = MinecraftClient.getInstance();
-                    boolean hasPaper = false;
-                    if (client != null && client.player != null && client.player.getInventory() != null) {
-                        for (int slot = 0; slot < 9; slot++) {
-                            ItemStack stack = client.player.getInventory().getStack(slot);
-                            if (stack != null && !stack.isEmpty() && stack.getItem() == Items.PAPER) {
-                                hasPaper = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (hasPaper) {
-                        if(!InventoryEventHandler.isBlocked()) {
-                            InventoryEventHandler.setBlocked(true);
-                        }
-                        InventoryEventHandler.setRunning(true);
-                        TransactionUtil.reset();
-                        LoggerUtil.info("Cooldown message detected and paper found on hotbar — starting hotbar sequence.");
-                    } else {
-                        LoggerUtil.info("Cooldown message detected but no paper on hotbar — ignoring.");
-                    }
-                } else {
-                    if(!InventoryEventHandler.isBlocked()) {
-                        InventoryEventHandler.setBlocked(true);
-                        LoggerUtil.info("Player not available, blocking inventory.");
-                    }
-                    InventoryEventHandler.setRunning(true);
-                    TransactionUtil.reset();
+                if(!InventoryEventHandler.isBlocked()) {
+                    InventoryEventHandler.setBlocked(true);
+                    LoggerUtil.info("Player not available, blocking inventory.");
                 }
+                InventoryEventHandler.setRunning(true);
+                TransactionUtil.reset();
             }
 
             if (raw.contains("Serwer jest niedostępny! Brak aktywnego kanału")) {

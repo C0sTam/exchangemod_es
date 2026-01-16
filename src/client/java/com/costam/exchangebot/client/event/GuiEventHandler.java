@@ -110,7 +110,17 @@ public class GuiEventHandler {
                         MinecraftClient.getInstance().execute(() -> {
                             if (MinecraftClient.getInstance().player != null && MinecraftClient.getInstance().player.currentScreenHandler != null) {
                                 String name = MinecraftClient.getInstance().player.getName().getString();
-                                int targetSlot = name.equalsIgnoreCase("Vixdy") ? 0 : (name.equalsIgnoreCase("iILoveXim") ? 1 : 0);
+                                String preferred = ServerInfoUtil.getPreferredAccountMode();
+                                int targetSlot;
+                                if ("LIFESTEAL".equalsIgnoreCase(preferred)) {
+                                    targetSlot = 0;
+                                } else if ("BOXPVP".equalsIgnoreCase(preferred)) {
+                                    targetSlot = 1;
+                                } else {
+                                    boolean isLf = name.equalsIgnoreCase("micho1") || name.equalsIgnoreCase("Vixdy");
+                                    boolean isBox = name.equalsIgnoreCase("Matejson") || name.equalsIgnoreCase("iILoveXim");
+                                    targetSlot = isLf ? 0 : (isBox ? 1 : 0);
+                                }
                                 MinecraftClient.getInstance().interactionManager.clickSlot(
                                         MinecraftClient.getInstance().player.currentScreenHandler.syncId,
                                         targetSlot,
