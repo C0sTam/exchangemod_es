@@ -49,6 +49,10 @@ dependencies {
 
     modImplementation "com.google.code.gson:gson:2.10.1"
     include("com.google.code.gson:gson:2.10.1")
+
+    // JUnit Testing Dependencies
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "org.hamcrest:hamcrest:2.2"
 }
 
 processResources {
