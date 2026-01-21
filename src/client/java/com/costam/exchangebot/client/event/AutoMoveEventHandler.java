@@ -18,6 +18,11 @@ public class AutoMoveEventHandler {
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private static volatile boolean lobbyRetrySlowMode = false;
     private static long movementDisabledUntil = 0L;
+    private static volatile boolean waitingForVerified = false;
+    private static volatile boolean waitingForGui = false;
+    private static String lastMode = null;
+    private static boolean lobbyMoveActive = false;
+    private static int lobbyMoveTicks = 0;
 
     public static void disableMovementFor(long durationMs) {
         movementDisabledUntil = System.currentTimeMillis() + durationMs;
@@ -41,15 +46,30 @@ public class AutoMoveEventHandler {
                 }
 
                 String mode = ServerInfoUtil.getServerType();
+                if (mode != null && (lastMode == null || !mode.equalsIgnoreCase(lastMode))) {
+                    lastMode = mode;
+                    if ("LOBBY".equalsIgnoreCase(mode)) {
+                        lobbyMoveActive = true;
+                        lobbyMoveTicks = 0;
+                    } else {
+                        lobbyMoveActive = false;
+                        lobbyMoveTicks = 0;
+                    }
+                }
                 if ("LOBBY".equalsIgnoreCase(mode)) {
-                    long interval = lobbyRetrySlowMode ? 5_000L : 2_000L;
-                    boolean shouldPress = lastLobbyUseMs == 0L || nowMs - lastLobbyUseMs >= interval;
-                    if (shouldPress) {
-                        lastLobbyUseMs = nowMs;
-                        client.options.useKey.setPressed(true);
-                        scheduler.schedule(() -> {
-                            client.execute(() -> client.options.useKey.setPressed(false));
-                        }, 300, TimeUnit.MILLISECONDS);
+                    if (lobbyMoveActive) {
+                        lobbyMoveTicks++;
+                        client.options.forwardKey.setPressed(true);
+                        client.player.setYaw(client.player.getYaw() + 1.0F);
+                        client.player.setPitch(client.player.getPitch() + 0.5F);
+                        if (lobbyMoveTicks >= 40) {
+                            lobbyMoveActive = false;
+                            lobbyMoveTicks = 0;
+                            client.options.forwardKey.setPressed(false);
+                            waitingForVerified = true;
+                        }
+                    } else {
+                        client.options.forwardKey.setPressed(false);
                     }
 
                     moving = false;
@@ -100,4 +120,8 @@ public class AutoMoveEventHandler {
 
     }
     public static void setLobbyRetrySlowMode(boolean slow) { lobbyRetrySlowMode = slow; }
+    public static void setWaitingForVerified(boolean v) { waitingForVerified = v; }
+    public static boolean isWaitingForVerified() { return waitingForVerified; }
+    public static void setWaitingForGui(boolean g) { waitingForGui = g; }
+    public static boolean isWaitingForGui() { return waitingForGui; }
 }

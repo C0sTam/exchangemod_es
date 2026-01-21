@@ -81,6 +81,27 @@ public class GuiEventHandler {
 
             
             String title = currentScreen.getTitle().getString();
+            if (AutoMoveEventHandler.isWaitingForGui()) {
+                AutoMoveEventHandler.setWaitingForGui(false);
+                scheduler.schedule(() -> {
+                    MinecraftClient.getInstance().execute(() -> {
+                        if (MinecraftClient.getInstance().player != null && MinecraftClient.getInstance().player.currentScreenHandler != null) {
+                            String name = MinecraftClient.getInstance().player.getName().getString();
+                            int base = 10;
+                            int offset = Math.floorMod(name.hashCode(), 9);
+                            int targetSlot = base + offset; // deterministic per account name
+                            ScreenHandler handler = MinecraftClient.getInstance().player.currentScreenHandler;
+                            MinecraftClient.getInstance().interactionManager.clickSlot(
+                                    handler.syncId,
+                                    targetSlot,
+                                    0,
+                                    SlotActionType.PICKUP,
+                                    MinecraftClient.getInstance().player
+                            );
+                        }
+                    });
+                }, 300, TimeUnit.MILLISECONDS);
+            }
 
             if (title.contains("This server requires") || title.contains("resource pack") || title.contains("paczki zasobów")) {
                 if (currentScreen != lastScreen) {

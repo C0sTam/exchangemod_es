@@ -12,6 +12,8 @@ import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.util.Window;
+import net.minecraft.util.Hand;
+import com.costam.exchangebot.client.event.AutoMoveEventHandler;
 import com.costam.exchangebot.client.mixin.ChatHudAccessor;
 import java.util.concurrent.ScheduledFuture;
 import org.lwjgl.opengl.GL11;
@@ -77,6 +79,17 @@ public class ChatEventHandler {
                     spawnAwaitTeleport = false;
                     if (spawnRetryTask != null) spawnRetryTask.cancel(false);
                 }
+            }
+            String lower = raw.toLowerCase();
+            if (AutoMoveEventHandler.isWaitingForVerified() && (lower.contains("zweryfikowane") || lower.contains("pomyślnie zweryfikowano"))) {
+                AutoMoveEventHandler.setWaitingForVerified(false);
+                AutoMoveEventHandler.setWaitingForGui(true);
+                scheduler.schedule(() -> {
+                    MinecraftClient client = MinecraftClient.getInstance();
+                    if (client != null && client.player != null && client.interactionManager != null) {
+                        client.execute(() -> client.interactionManager.interactItem(client.player, Hand.MAIN_HAND));
+                    }
+                }, 200, TimeUnit.MILLISECONDS);
             }
             if (raw.contains("Zweryfikowano czynnik zaufania") && raw.contains("Możesz kontynuować grę")) {
                 if (!"LOBBY".equals(ServerInfoUtil.getServerType())) {
