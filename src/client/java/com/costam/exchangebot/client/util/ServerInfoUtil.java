@@ -120,8 +120,8 @@ public class ServerInfoUtil {
     public static void setPreferredModeForUsername(String username) {
         if (username == null) { preferredAccountMode = null; return; }
         String u = username.trim();
-        if (u.equalsIgnoreCase("micho1") || u.equalsIgnoreCase("eswymianalf")) preferredAccountMode = "LIFESTEAL";
-        else if (u.equalsIgnoreCase("Matejson") || u.equalsIgnoreCase("eswymianabox")) preferredAccountMode = "BOXPVP";
+        if (u.equalsIgnoreCase("micho1") || u.equalsIgnoreCase("eswymianylf")) preferredAccountMode = "LIFESTEAL";
+        else if (u.equalsIgnoreCase("Matejson") || u.equalsIgnoreCase("eswymianybox")) preferredAccountMode = "BOXPVP";
         else preferredAccountMode = null;
     }
 
