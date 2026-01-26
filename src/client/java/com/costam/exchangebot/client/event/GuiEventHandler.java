@@ -138,8 +138,8 @@ public class GuiEventHandler {
                                 } else if ("BOXPVP".equalsIgnoreCase(preferred)) {
                                     targetSlot = 1;
                                 } else {
-                                    boolean isLf = name.equalsIgnoreCase("micho1") || name.equalsIgnoreCase("Vixdy");
-                                    boolean isBox = name.equalsIgnoreCase("Matejson") || name.equalsIgnoreCase("iILoveXim");
+                                    boolean isLf = name.equalsIgnoreCase("micho1") || name.equalsIgnoreCase("eswymianalf");
+                                    boolean isBox = name.equalsIgnoreCase("Matejson") || name.equalsIgnoreCase("eswymianabox");
                                     targetSlot = isLf ? 0 : (isBox ? 1 : 0);
                                 }
                                 MinecraftClient.getInstance().interactionManager.clickSlot(
